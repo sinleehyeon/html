@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        input[type="text"]{
+            background-color: green;
+        }
+        input[type="text1"]{
+            background-color: yellow;
+        }
+        h1:hover{
+            color: red;
+        }
+        li:nth-of-type(3n){
+            color: red;
+        }
+        #parent{
+            font-size: 40px;
+        }
+        #child{
+            font-size: 0.5em;
+        }
+        #grandchild{
+            font-size: 0.5em;
+        }
+    </style>
+</head>
+<body>
+    <h1>index20240416.html</h1>
+    <label for="id"> 아이디 <input type="text" name="id" id="id"></label> 
+    <label for="pass"> 비밀번호 <input type="text1" name="pass" id="pass"></label> 
+    
+    <ul>
+        <li>item1</li>
+        <li>item2</li>
+        <li>item3</li>
+        <li>item4</li>
+        <li>item5</li>
+        <li>item6</li>
+        <li>item7</li>
+        <li>item8</li>
+        <li>item9</li>
+    </ul>
+
+    <form action="">
+        <h1>글꼴 크기 연습</h1>
+        <div id="parent">부모요소입니다.
+            <div id="child">자식요소입니다.
+                <div id="grandchild">손자요소입니다.</div>
+            </div>
+        </div>
+    </form> 
+</body>
+</html>
