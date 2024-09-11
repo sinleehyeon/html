@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <style>
+        * {
+            text-align: center;
+            background-color: black;
+        }
+
+        /* 게임판의 테이블 스타일 설정 */
+        #board {
+            margin-left: auto;
+            margin-right: auto;
+            border-collapse: collapse;
+        }
+
+        /* 각 셀의 스타일을 설정 */
+        #board tr td {
+            border-radius: 10px;
+            background-color: #0078d4;
+            width: 30px;
+            height: 30px;
+            text-align: center;
+            font-size: 20px;
+        }
+
+        /* 마우스를 올릴 때 셀의 색상을 변경 */
+        #board tr td:hover{
+            background-color: lightblue;
+            transition: background-color 0.5s ease;
+        }
+
+        /* 클릭한 셀의 스타일 */
+        #board tr td.clicked {
+            background-color: #cccccc;
+        }
+
+        /* 지뢰를 클릭했을 때 지뢰 아이콘을 표시 */
+        #board tr td.mine.clicked::after {
+            content: "💣";
+        }
+
+        /* 깃발을 설정한 셀에 깃발 아이콘을 표시 */
+        #board tr td.flagged::after {
+            content: "🏴";
+        }
+
+        /* 새로운 게임 생성 버튼 스타일 */
+        .new{
+            width: 200px;
+            height: 40px;
+            margin-top: 100px;
+            background-color: lightblue;
+            border: 3px solid lightskyblue;
+            border-radius: 20px;
+        }
+
+        /* 버튼을 마우스로 올렸을 때 색상 변화 */
+        .new:hover{
+            border: 3px solid lightgreen;
+            background-color: lightseagreen;
+            transition: background-color 0.5 ease;
+        }
+
+        /* 버튼을 클릭할 때 크기 변화 */
+        .new:active{
+            transform: scale(0.9);
+        }
+    </style>
+</head>
+
+<body>
+    <h1>지뢰찾기</h1>
+    <!-- 게임판 테이블 -->
+    <table id="board"></table>
+    <!-- 새로운 게임 생성 버튼 -->
+    <BUTTON onclick="genGrid();" class="new">게임 다시 생성하기</BUTTON>
+
+    <script>
+        const size = 8;  // 지뢰찾기 판의 크기
+        const mineProbability = 0.2;  // 지뢰가 생성될 확률
+
+        let minefield;  // 지뢰 필드를 저장할 변수
+        let revealedCount = 0;  // 플레이어가 오픈한 칸의 수
+        let totalMines = 0;  // 총 지뢰의 수
+        let flaggedMines = 0;  // 깃발로 표시한 지뢰의 수
+        const grid = document.getElementById("board");  // 테이블 요소 가져오기
+
+        // 지뢰찾기 판을 생성하는 함수
+        function genGrid() {
+            grid.innerHTML = "";  // 테이블 초기화
+            minefield = [];
+            revealedCount = 0;
+            totalMines = 0;
+            flaggedMines = 0;
+
+            // 테이블을 8x8 크기로 생성
+            for (let i = 0; i < size; i++) {
+                const row = grid.insertRow(i);
+                const rowData = [];
+
+                for (let j = 0; j < size; j++) {
+                  const cell = row.insertCell(j);
+                  cell.setAttribute("data-row", i);
+                  cell.setAttribute("data-col", j);
+                  cell.onclick = function () { clickBox(this); };  // 왼쪽 클릭 시 동작
+                  cell.oncontextmenu = function (e) { e.preventDefault(); flagBox(this); };  // 오른쪽 클릭 시 동작
+
+                    const isMine = Math.random() < mineProbability;  // 무작위로 지뢰 설정
+                    cell.setAttribute("mine", isMine ? "true" : "false");
+                    rowData.push({
+                        isMine: isMine,
+                        revealed: false,
+                        flagged: false
+                    });
+
+                    if (isMine) {
+                        totalMines++;  // 지뢰의 총 개수 계산
+                    }
+                }
+                minefield.push(rowData);
+            }
+        }
+
+        // 왼쪽 클릭 시 호출되는 함수
+        function clickBox(cell) {
+            const row = parseInt(cell.getAttribute("data-row"));
+            const col = parseInt(cell.getAttribute("data-col"));
+
+            // 이미 오픈했거나 깃발이 표시된 경우 클릭하지 않음
+            if (minefield[row][col].flagged || minefield[row][col].revealed) {
+                return;
+            }
+
+            // 지뢰를 클릭한 경우
+            if (minefield[row][col].isMine) {
+                cell.className = "mine clicked";
+                revealMines();
+                alert("게임이 종료되었습니다.");  // 게임 종료 메시지
+            } else {
+                revealCell(row, col);  // 안전한 칸을 클릭한 경우
+                checkVictory();  // 승리 조건 확인
+            }
+        }
+
+        // 오른쪽 클릭 시 호출되는 깃발 표시 함수
+        function flagBox(cell) {
+            const row = parseInt(cell.getAttribute("data-row"));
+            const col = parseInt(cell.getAttribute("data-col"));
+
+            // 이미 오픈한 셀은 깃발 표시 불가
+            if (minefield[row][col].revealed) {
+                return;
+            }
+
+            // 깃발이 이미 표시된 경우 깃발 제거
+            if (minefield[row][col].flagged) {
+                cell.className = "";
+                minefield[row][col].flagged = false;
+                flaggedMines--;
+            } else {
+               cell.className = "flagged";
+               minefield[row][col].flagged = true;
+               flaggedMines++;
+            }
+        }
+
+        // 빈 칸 또는 지뢰가 아닌 셀을 열 때 호출되는 함수
+        function revealCell(row, col) {
+            if (row < 0 || col < 0 || row >= size || col >= size || minefield[row][col].revealed || minefield[row][col].flagged) {
+                return;
+            }
+            const cell = grid.rows[row].cells[col];
+            const mineCount = countAdjacentMines(row, col);  // 주변 지뢰의 수를 계산
+
+            minefield[row][col].revealed = true;
+            revealedCount++;
+            cell.className = "clicked";
+            if (mineCount > 0) {
+                cell.innerHTML = mineCount;  // 주변 지뢰 수 표시
+            } else {
+                // 주변 셀들도 자동으로 열림
+                revealCell(row - 1, col);
+                revealCell(row + 1, col);
+                revealCell(row, col - 1);
+                revealCell(row, col + 1);
+                revealCell(row - 1, col - 1);
+                revealCell(row - 1, col + 1);
+                revealCell(row + 1, col - 1);
+                revealCell(row + 1, col + 1);
+            }
+        }
+
+        // 주변 8개의 셀에 지뢰가 있는지 확인하는 함수
+        function countAdjacentMines(row, col) {
+            let mineCount = 0;
+
+            for (let i = -1; i <= 1; i++) {
+              for (let j = -1; j <= 1; j++) {
+                 const newRow = row + i;
+                 const newCol = col + j;
+
+                 if (newRow >= 0 && newCol >= 0 && newRow < size && newCol < size) {
+                   if (minefield[newRow][newCol].isMine) {
+                      mineCount++;
+                    }
+                  }
+              }
+            }
+
+            return mineCount;
+        }
+
+        // 모든 지뢰를 공개하는 함수
+        function revealMines() {
+          for (let i = 0; i < size; i++) {
+            for (let j = 0; j < size; j++) {
+              if (minefield[i][j].isMine) {
+                grid.rows[i].cells[j].className = "mine clicked";
+                }
+            }
+          }
+        }
+
+        // 승리 조건을 확인하는 함수
+        function checkVictory() {
+          const totalCells = size * size;
+          const nonMineCells = totalCells - totalMines;
+
+          if (revealedCount === nonMineCells && flaggedMines === totalMines) {
+             alert("축하합니다! 당신이 이겼습니다!");  // 승리 메시지
+              revealMines();
+            }
+        }
+
+        // 게임 시작 시 초기 그리드 생성
+        genGrid();
+    </script>
+</body>
+
+</html>
